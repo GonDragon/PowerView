@@ -23,7 +23,7 @@ namespace PowerView
             {
                 row.ToggleableIcon(ref CustomPowerOverlay.enabled, Textures.toggleIcon, "Powerview.Playsetting.Tooltip".Translate(), SoundDefOf.Mouseover_ButtonToggle);
 
-                if (CustomPowerOverlay.enabled && Event.current.type == EventType.Repaint) OverlayDrawHandler.DrawPowerGridOverlayThisFrame();
+                if (CustomPowerOverlay.enabled && Event.current.type == EventType.Repaint) CustomPowerOverlay.DoWhileOverlayOn();
             }
         }
     }

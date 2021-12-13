@@ -74,6 +74,17 @@ namespace PowerView
                     break;
             }
         }
+        static float lastUpdated = 0;
+        public static void DoWhileOverlayOn()
+        {
+            OverlayDrawHandler.DrawPowerGridOverlayThisFrame();
+            if(Time.realtimeSinceStartup - lastUpdated > 1)
+            {
+                Find.CurrentMap.powerNetManager.NotifyDrawersForWireUpdate(Find.CameraDriver.MapPosition);
+                lastUpdated = Time.realtimeSinceStartup;
+            }
+        }
+
         public static void PrintPowerOverlayThing(SectionLayer layer, Thing parent)
         {
             PowerNet powerNet = ((Building)parent).PowerComp.PowerNet;
