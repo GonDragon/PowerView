@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <Powerview.Playsetting.Tooltip>Toggle Electrical Grid.\n\nWhile on, it will show an overlay with the electrical grid. The grid will display different colors according to its status:\nGray: There is no buildings using energy connected.\nBlue: The energy production of the grid is greater than its consumption.\nGreen: The energy production of the grid is lower than its consumption.</Powerview.Playsetting.Tooltip>
+
+</LanguageData>

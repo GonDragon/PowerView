@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ModMetaData>
-  <packageId>GonDragon.PowerView</packageId>
-  <name>Power View Toggler</name>
+  <packageId>GonDragon.ElectricGrid</packageId>
+  <name>Electrical Grid Toggler</name>
   <author>GonDragon</author>
   <description>Adds a Toggle to view the power grid with some visual info.</description>
   <supportedVersions>
