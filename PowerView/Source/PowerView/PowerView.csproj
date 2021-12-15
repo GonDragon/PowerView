@@ -66,12 +66,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompPowerPatch.cs" />
-    <Compile Include="Graphic_CustomLinkedTransmitterOverlay.cs" />
     <Compile Include="Mod.cs" />
     <Compile Include="PlaySettingsPatch.cs" />
     <Compile Include="CustomPowerOverlay.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Textures.cs" />
     <Compile Include="Transpilers.cs" />
   </ItemGroup>
   <ItemGroup>

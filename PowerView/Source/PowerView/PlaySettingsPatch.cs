@@ -21,7 +21,7 @@ namespace PowerView
             }
             else
             {
-                row.ToggleableIcon(ref CustomPowerOverlay.enabled, Textures.toggleIcon, "Powerview.Playsetting.Tooltip".Translate(), SoundDefOf.Mouseover_ButtonToggle);
+                row.ToggleableIcon(ref CustomPowerOverlay.enabled, CustomPowerOverlay.toggleIcon, "Powerview.Playsetting.Tooltip".Translate(), SoundDefOf.Mouseover_ButtonToggle);
 
                 if (CustomPowerOverlay.enabled && Event.current.type == EventType.Repaint) CustomPowerOverlay.DoWhileOverlayOn();
             }

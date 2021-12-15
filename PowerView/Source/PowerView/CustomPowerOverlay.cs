@@ -15,47 +15,33 @@ namespace PowerView
     static class CustomPowerOverlay
     {
         public static bool enabled;
+        public static readonly Texture2D toggleIcon = ContentFinder<Texture2D>.Get("UI/Playsettings/gd-powerview");
 
-        public static readonly Graphic_CustomLinkedTransmitterOverlay LinkedOverlayGraphicInactive;
-        public static readonly Graphic_CustomLinkedTransmitterOverlay LinkedOverlayGraphicPositive;
-        public static readonly Graphic_CustomLinkedTransmitterOverlay LinkedOverlayGraphicNegative;
+        public static readonly Graphic_LinkedTransmitterOverlay LinkedOverlayGraphicInactive;
+        public static readonly Graphic_LinkedTransmitterOverlay LinkedOverlayGraphicPositive;
+        public static readonly Graphic_LinkedTransmitterOverlay LinkedOverlayGraphicOnBattery;
+        public static readonly Graphic_LinkedTransmitterOverlay LinkedOverlayGraphicNegative;
 
-        private static readonly Color32[] qua_inactive = new Color32[4]
-        {
-            new Color32(byte.MaxValue,byte.MaxValue,byte.MaxValue,byte.MaxValue),
-            new Color32(byte.MaxValue,byte.MaxValue,byte.MaxValue,byte.MaxValue),
-            new Color32(byte.MaxValue,byte.MaxValue,byte.MaxValue,byte.MaxValue),
-            new Color32(byte.MaxValue,byte.MaxValue,byte.MaxValue,byte.MaxValue),
-        };
-
-        private static readonly Color32[] qua_positive = new Color32[4]
-        {
-            new Color32(0,byte.MaxValue,byte.MaxValue,byte.MaxValue),
-            new Color32(0,byte.MaxValue,byte.MaxValue,byte.MaxValue),
-            new Color32(0,byte.MaxValue,byte.MaxValue,byte.MaxValue),
-            new Color32(0,byte.MaxValue,byte.MaxValue,byte.MaxValue),
-        };
-
-        private static readonly Color32[] qua_negative = new Color32[4]
-        {
-            new Color32(byte.MaxValue,byte.MaxValue,0,byte.MaxValue),
-            new Color32(byte.MaxValue,byte.MaxValue,0,byte.MaxValue),
-            new Color32(byte.MaxValue,byte.MaxValue,0,byte.MaxValue),
-            new Color32(byte.MaxValue,byte.MaxValue,0,byte.MaxValue),
-        };
+        private static readonly ColorInt inactive = new ColorInt(200, 200, 200, 100);
+        private static readonly ColorInt positive = new ColorInt(210, 230, 255, 190);
+        private static readonly ColorInt onBattery = new ColorInt(225, 225, 0, 190);
+        private static readonly ColorInt negative = new ColorInt(250, 90, 90, 190);
 
         static CustomPowerOverlay()
         {
-            Graphic subGraphicInactive = GraphicDatabase.Get<Graphic_Single>("Things/Special/Power/TransmitterAtlas", ShaderDatabase.MetaOverlayDesaturated);
-            Graphic subGraphicPositive = GraphicDatabase.Get<Graphic_Single>("Things/Special/Power/TransmitterAtlas", ShaderDatabase.MetaOverlay);
-            Graphic subGraphicNegative = GraphicDatabase.Get<Graphic_Single>("Things/Special/Power/TransmitterAtlas", ShaderDatabase.MetaOverlay);
+            Graphic subGraphicInactive = GraphicDatabase.Get<Graphic_Single>("Things/Special/Power/TransmitterAtlas", ShaderDatabase.MetaOverlay, Vector2.one, inactive.ToColor);
+            Graphic subGraphicPositive = GraphicDatabase.Get<Graphic_Single>("Things/Special/Power/TransmitterAtlas", ShaderDatabase.MetaOverlay, Vector2.one, positive.ToColor);
+            Graphic subGraphicOnBattery = GraphicDatabase.Get<Graphic_Single>("Things/Special/Power/TransmitterAtlas", ShaderDatabase.MetaOverlay, Vector2.one, onBattery.ToColor);
+            Graphic subGraphicNegative = GraphicDatabase.Get<Graphic_Single>("Things/Special/Power/TransmitterAtlas", ShaderDatabase.MetaOverlay, Vector2.one, negative.ToColor);
 
-            CustomPowerOverlay.LinkedOverlayGraphicInactive = new Graphic_CustomLinkedTransmitterOverlay(subGraphicInactive);
-            CustomPowerOverlay.LinkedOverlayGraphicPositive = new Graphic_CustomLinkedTransmitterOverlay(subGraphicPositive);
-            CustomPowerOverlay.LinkedOverlayGraphicNegative = new Graphic_CustomLinkedTransmitterOverlay(subGraphicNegative);
+            CustomPowerOverlay.LinkedOverlayGraphicInactive = new Graphic_LinkedTransmitterOverlay(subGraphicInactive);
+            CustomPowerOverlay.LinkedOverlayGraphicPositive = new Graphic_LinkedTransmitterOverlay(subGraphicPositive);
+            CustomPowerOverlay.LinkedOverlayGraphicOnBattery = new Graphic_LinkedTransmitterOverlay(subGraphicOnBattery);
+            CustomPowerOverlay.LinkedOverlayGraphicNegative = new Graphic_LinkedTransmitterOverlay(subGraphicNegative);
 
             subGraphicInactive.MatSingle.renderQueue = 3600;
             subGraphicPositive.MatSingle.renderQueue = 3600;
+            subGraphicOnBattery.MatSingle.renderQueue = 3600;
             subGraphicNegative.MatSingle.renderQueue = 3600;
         }
 
@@ -64,13 +50,16 @@ namespace PowerView
             switch (status)
             {
                 case PowerStatus.inactive:
-                    LinkedOverlayGraphicInactive.Print(layer, thing, qua_inactive);
+                    LinkedOverlayGraphicInactive.Print(layer, thing, 0);
                     break;
                 case PowerStatus.positive:
-                    LinkedOverlayGraphicPositive.Print(layer, thing, qua_positive);
+                    LinkedOverlayGraphicPositive.Print(layer, thing, 0);
+                    break;
+                case PowerStatus.onBattery:
+                    LinkedOverlayGraphicOnBattery.Print(layer, thing, 0);
                     break;
                 case PowerStatus.negative:
-                    LinkedOverlayGraphicNegative.Print(layer, thing, qua_negative);
+                    LinkedOverlayGraphicNegative.Print(layer, thing, 0);
                     break;
             }
         }
@@ -105,7 +94,8 @@ namespace PowerView
                 if (!comp.GetType().IsAssignableFrom(typeof(CompPowerPlant))) continue;
                 netPowerGain += ((CompPowerPlant)comp).PowerOutput;
             }
-            PowerStatus status = poweTraders > 0 ? (netPowerGain > 0 ? PowerStatus.positive : PowerStatus.negative) : PowerStatus.inactive;
+
+            PowerStatus status = poweTraders > 0 ? (netPowerGain > 0 ? PowerStatus.positive : (powerNet.CurrentStoredEnergy() > 0 ? PowerStatus.onBattery :PowerStatus.negative)) : PowerStatus.inactive;
 
             CustomPowerOverlay.Print(status, layer, parent);
         }
@@ -114,6 +104,7 @@ namespace PowerView
         {
             inactive,
             positive,
+            onBattery,
             negative
         }
     }
