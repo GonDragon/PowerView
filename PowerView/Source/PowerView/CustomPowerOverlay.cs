@@ -1,31 +1,26 @@
-﻿using System;
+﻿using RimWorld;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Verse;
-using RimWorld;
 using UnityEngine;
-using System.Reflection;
+using Verse;
 
 namespace PowerView
 {
     [StaticConstructorOnStartup]
-    static class CustomPowerOverlay
+    internal static class CustomPowerOverlay
     {
-        public static bool enabled;
-        public static readonly Texture2D toggleIcon = ContentFinder<Texture2D>.Get("UI/Playsettings/gd-powerview");
-
         public static readonly Graphic_LinkedTransmitterOverlay LinkedOverlayGraphicInactive;
-        public static readonly Graphic_LinkedTransmitterOverlay LinkedOverlayGraphicPositive;
-        public static readonly Graphic_LinkedTransmitterOverlay LinkedOverlayGraphicOnBattery;
         public static readonly Graphic_LinkedTransmitterOverlay LinkedOverlayGraphicNegative;
-
+        public static readonly Graphic_LinkedTransmitterOverlay LinkedOverlayGraphicOnBattery;
+        public static readonly Graphic_LinkedTransmitterOverlay LinkedOverlayGraphicPositive;
+        public static readonly Texture2D toggleIcon = ContentFinder<Texture2D>.Get("UI/Playsettings/gd-powerview");
+        public static bool enabled;
         private static readonly ColorInt inactive = new ColorInt(200, 200, 200, 100);
-        private static readonly ColorInt positive = new ColorInt(210, 230, 255, 190);
-        private static readonly ColorInt onBattery = new ColorInt(225, 225, 0, 190);
         private static readonly ColorInt negative = new ColorInt(250, 90, 90, 190);
+        private static readonly ColorInt onBattery = new ColorInt(225, 225, 0, 190);
+        private static readonly ColorInt positive = new ColorInt(210, 230, 255, 190);
+        private static readonly Dictionary<int, PowerStatus> powernetStatusCache = new Dictionary<int, PowerStatus>();
+
+        private static float lastUpdated = 0;
 
         static CustomPowerOverlay()
         {
@@ -44,31 +39,20 @@ namespace PowerView
             subGraphicOnBattery.MatSingle.renderQueue = 3600;
             subGraphicNegative.MatSingle.renderQueue = 3600;
         }
-
-        private static void Print(PowerStatus status,SectionLayer layer, Thing thing)
+        private enum PowerStatus : byte
         {
-            switch (status)
-            {
-                case PowerStatus.inactive:
-                    LinkedOverlayGraphicInactive.Print(layer, thing, 0);
-                    break;
-                case PowerStatus.positive:
-                    LinkedOverlayGraphicPositive.Print(layer, thing, 0);
-                    break;
-                case PowerStatus.onBattery:
-                    LinkedOverlayGraphicOnBattery.Print(layer, thing, 0);
-                    break;
-                case PowerStatus.negative:
-                    LinkedOverlayGraphicNegative.Print(layer, thing, 0);
-                    break;
-            }
+            inactive,
+            positive,
+            onBattery,
+            negative
         }
-        static float lastUpdated = 0;
+
         public static void DoWhileOverlayOn()
         {
             OverlayDrawHandler.DrawPowerGridOverlayThisFrame();
-            if(Time.realtimeSinceStartup - lastUpdated > 1)
+            if (Time.realtimeSinceStartup - lastUpdated > 1)
             {
+                powernetStatusCache.Clear();
                 Find.CurrentMap.powerNetManager.NotifyDrawersForWireUpdate(Find.CameraDriver.MapPosition);
                 lastUpdated = Time.realtimeSinceStartup;
             }
@@ -77,35 +61,64 @@ namespace PowerView
         public static void PrintPowerOverlayThing(SectionLayer layer, Thing parent)
         {
             PowerNet powerNet = ((Building)parent).PowerComp.PowerNet;
+            int powernetHash = powerNet.GetHashCode();
 
-            float netPowerGain = powerNet.CurrentEnergyGainRate() / CompPower.WattsToWattDaysPerTick;
-            int poweTraders = 0;
-            foreach(CompPower comp in powerNet.connectors)
+            if (!powernetStatusCache.ContainsKey(powernetHash))
             {
-                if (!comp.GetType().IsAssignableFrom(typeof(CompPowerTrader)) || comp.parent.IsBrokenDown()) continue;
-                CompFlickable comp1 = comp.parent.TryGetComp<CompFlickable>();
-                if (comp1 != null && !comp1.SwitchIsOn) continue;
-                netPowerGain += ((CompPowerTrader)comp).PowerOutput;
-                poweTraders++;
+                //The way count the powergain was simplified using the "PowerMetrics" function of Pustalorc Active-Circuits github as an example
+                // https://github.com/Pustalorc/Active-Circuits/blob/main/Source/ActiveCircuitsBase.cs
+
+                float produced = 0;
+                float consumed = 0;
+
+                foreach (CompPowerTrader comp in powerNet.powerComps)
+                {
+                    if (comp.PowerOutput > 0)
+                    {
+                        produced += comp.PowerOutput;
+                    }
+                    else
+                    {
+                        if (comp.parent.IsBrokenDown()) continue;
+
+                        CompFlickable comp1 = comp.parent.TryGetComp<CompFlickable>();
+                        if (comp1 != null && !comp1.SwitchIsOn) continue;
+
+                        CompSchedule comp2 = comp.parent.TryGetComp<CompSchedule>();
+                        if (comp2 != null && !comp2.Allowed) continue;
+
+                        consumed += comp.PowerOutput;
+                    }
+                }
+
+                float netPowerGain = produced + consumed;
+
+                powernetStatusCache[powernetHash] = consumed != 0 ? (netPowerGain > 0 ? PowerStatus.positive : (powerNet.CurrentStoredEnergy() > 0 ? PowerStatus.onBattery : PowerStatus.negative)) : PowerStatus.inactive;
             }
 
-            foreach (CompPower comp in powerNet.transmitters)
-            {
-                if (!comp.GetType().IsAssignableFrom(typeof(CompPowerPlant))) continue;
-                netPowerGain += ((CompPowerPlant)comp).PowerOutput;
-            }
-
-            PowerStatus status = poweTraders > 0 ? (netPowerGain > 0 ? PowerStatus.positive : (powerNet.CurrentStoredEnergy() > 0 ? PowerStatus.onBattery :PowerStatus.negative)) : PowerStatus.inactive;
-
-            CustomPowerOverlay.Print(status, layer, parent);
+            CustomPowerOverlay.Print(powernetStatusCache[powernetHash], layer, parent);
         }
 
-        enum PowerStatus : byte
+        private static void Print(PowerStatus status, SectionLayer layer, Thing thing)
         {
-            inactive,
-            positive,
-            onBattery,
-            negative
+            switch (status)
+            {
+                case PowerStatus.inactive:
+                    LinkedOverlayGraphicInactive.Print(layer, thing, 0);
+                    break;
+
+                case PowerStatus.positive:
+                    LinkedOverlayGraphicPositive.Print(layer, thing, 0);
+                    break;
+
+                case PowerStatus.onBattery:
+                    LinkedOverlayGraphicOnBattery.Print(layer, thing, 0);
+                    break;
+
+                case PowerStatus.negative:
+                    LinkedOverlayGraphicNegative.Print(layer, thing, 0);
+                    break;
+            }
         }
     }
 }
