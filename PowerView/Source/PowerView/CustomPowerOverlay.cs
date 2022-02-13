@@ -15,9 +15,9 @@ namespace PowerView
         public static readonly Texture2D toggleIcon = ContentFinder<Texture2D>.Get("UI/Playsettings/gd-powerview");
         public static bool enabled;
         private static readonly ColorInt inactive = new ColorInt(200, 200, 200, 100);
-        private static readonly ColorInt negative = new ColorInt(250, 90, 90, 190);
-        private static readonly ColorInt onBattery = new ColorInt(225, 225, 0, 190);
-        private static readonly ColorInt positive = new ColorInt(210, 230, 255, 190);
+        private static readonly ColorInt negative = new ColorInt(250, 90, 90, 200);
+        private static readonly ColorInt onBattery = new ColorInt(225, 225, 0, 200);
+        private static readonly ColorInt positive = new ColorInt(200, 200, 255, 200);
         private static readonly Dictionary<int, PowerStatus> powernetStatusCache = new Dictionary<int, PowerStatus>();
 
         private static float lastUpdated = 0;
