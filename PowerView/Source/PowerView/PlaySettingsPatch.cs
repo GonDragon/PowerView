@@ -1,17 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using HarmonyLib;
-using Verse;
+﻿using Verse;
 using RimWorld;
 using UnityEngine;
 
 namespace PowerView
 {
-    [HarmonyPatch(typeof(PlaySettings), "DoPlaySettingsGlobalControls")]
     internal class DoPlaySettingsGlobalControlsPatch
     {
         public static void Postfix(WidgetRow row, bool worldView)

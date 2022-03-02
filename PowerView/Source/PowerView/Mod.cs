@@ -36,6 +36,11 @@ namespace PowerView
 #endif
             Harmony = new Harmony(Id);
             Harmony.PatchAll();
+
+            if (!LoadedModManager.RunningModsListForReading.Any(x => x.Name == "Vanilla UI Expanded"))
+            {
+                Harmony.Patch(AccessTools.Method(typeof(PlaySettings), "DoPlaySettingsGlobalControls"), new HarmonyMethod(typeof(DoPlaySettingsGlobalControlsPatch).GetMethod("Postfix")));
+            }
         }
 
         public static void Log(string message) => Verse.Log.Message(PrefixMessage(message));
